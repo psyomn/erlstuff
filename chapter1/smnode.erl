@@ -1,31 +1,60 @@
 -module(smnode).
--author("lethaljellybean@gmail.com"). 
--export([smachine/2]).
+-author("lethaljellybean at gmail.com"). 
+-export([sample_sm/0,smachine/3]).
 
-% TODO 
-% @doc This is a node that implements behaviour of a state machine
-% in a perhaps naive method. 
+% @doc a quick sample of a state machine to 
+%      use for all sorts of stuff.
 %
-% A state machine requires vertices, edges, and conditions to travel
-% on one edge to another. 
+%                     t0
+%                     /\
+%      q0 --- t1 ---> q1 -+ t1
+%      /\                   |
+%       `---- t0 ---- q2 ---+ 
+%                     V t1
 %
-%                 t0
-%                 /\
-%  q0 --- t1 ---> q1 -+ t1
-%  /\                   |
-%   `---- t0 ---- q2 -- /
-%                 V t1
-
 sample_sm() ->
-  smachine({ 
-    {q0,t1,q1}, {q1,t0,q1},
-    {q1,t1,q2}, {q2,t0,q0},
-    {q2,t0,q0}
-  }, q0).
+  smachine([
+    {q0, 1, q1},
+    {q1, 0, q1},
+    {q1, 1, q2}, 
+    {q2, 0, q0},
+    {q2, 1, q2}],
+    {q0},
+    q0).
 
-% {From, {{state, token}, nextstate}}
-smachine(PossibleStates, CurrentState) ->
+% @doc This is a node that implements behaviour of a state machine
+%      in a perhaps naive method. 
+%
+%      A state machine requires vertices, edges, and conditions to travel
+%      on one edge to another. 
+%      {From, {{state, token}, nextstate}}
+smachine(States, AcceptStates, CurrentState) ->
   receive
-    terminate -> ok
+    {From, terminate} -> 
+      From ! ok;
+    {From, Transition} -> 
+      TRet = transist(States, Transition),
+      case TRet =:= reject of 
+        true ->
+          From ! "Can't let you do that transistion, Starfox",
+          smachine(States, AcceptStates, CurrentState);
+        false ->
+          smachine(States, AcceptStates, TRet)
+      end;
+    {_, _} -> 
+      smachine(States, AcceptStates, CurrentState)
+  end.
+
+% @doc trying to transist from one state to another by checking if 
+%      the current node 
+%
+transist(   [],     _) -> reject;
+transist([H|T], Token) -> 
+  {_,RequiredToken,NextState} = H,
+  case Token =:= RequiredToken of
+    true ->
+      NextState;
+    false -> 
+      transist(T,Token)
   end.
 
