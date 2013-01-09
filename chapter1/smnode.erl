@@ -1,6 +1,8 @@
 -module(smnode).
 -author("lethaljellybean at gmail.com"). 
--export([sample_sm/0,smachine/3]).
+-export([spawn_sm/0,smachine/3]).
+
+-record(state_machina, {transition_table=[{}], accept_state=[], initial_state=q0}).
 
 % @doc a quick sample of a state machine to 
 %      use for all sorts of stuff.
@@ -12,15 +14,15 @@
 %       `---- t0 ---- q2 ---+ 
 %                     V t1
 %
-sample_sm() ->
-  smachine([
+spawn_sm() ->
+  spawn(fun() -> smachine([
     {q0, 1, q1},
     {q1, 0, q1},
     {q1, 1, q2}, 
     {q2, 0, q0},
     {q2, 1, q2}],
     {q0},
-    q0).
+    q0) end).
 
 % @doc This is a node that implements behaviour of a state machine
 %      in a perhaps naive method. 
@@ -30,8 +32,6 @@ sample_sm() ->
 %      {From, {{state, token}, nextstate}}
 smachine(States, AcceptStates, CurrentState) ->
   receive
-    {From, terminate} -> 
-      From ! ok;
     {From, Transition} -> 
       TRet = transist(States, Transition),
       case TRet =:= reject of 
@@ -41,7 +41,9 @@ smachine(States, AcceptStates, CurrentState) ->
         false ->
           smachine(States, AcceptStates, TRet)
       end;
-    {_, _} -> 
+    {From, terminate} -> 
+      From ! terminated;
+    _ -> 
       smachine(States, AcceptStates, CurrentState)
   end.
 
