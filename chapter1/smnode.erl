@@ -15,7 +15,7 @@
 %                     V t1
 %
 spawn_sm() ->
-  spawn(fun() -> smachine([
+  spawn(fun() -> smnode:smachine([
     {q0, 1, q1},
     {q1, 0, q1},
     {q1, 1, q2}, 
@@ -39,6 +39,9 @@ smachine(States, AcceptStates, CurrentState) ->
           From ! "Can't let you do that transistion, Starfox",
           smachine(States, AcceptStates, CurrentState);
         false ->
+	  From ! "Transition ok.",
+	  From ! "Current state:",
+	  From ! what_state(TRet, AcceptStates),
           smachine(States, AcceptStates, TRet)
       end;
     {From, terminate} -> 
