@@ -21,7 +21,7 @@ spawn_sm() ->
     {q1, 1, q2}, 
     {q2, 0, q0},
     {q2, 1, q2}],
-    {q0},
+    [q0],
     q0) end).
 
 % @doc This is a node that implements behaviour of a state machine
@@ -34,7 +34,7 @@ smachine(States, AcceptStates, CurrentState) ->
   receive
     {From, Transition} -> 
       TRet = transist(States, Transition),
-      case TRet =:= reject of 
+      case TRet =:= illegal of 
         true ->
           From ! "Can't let you do that transistion, Starfox",
           smachine(States, AcceptStates, CurrentState);
@@ -47,10 +47,20 @@ smachine(States, AcceptStates, CurrentState) ->
       smachine(States, AcceptStates, CurrentState)
   end.
 
+% @doc check to see whether the state machine is in finishing state
+%      (whether the input has been accepted or rejected).
+what_state(CurrentState, AcceptedStates) ->
+  case lists:member(CurrentState, AcceptedStates) of 
+    true ->
+      accepted;
+    false -> 
+      rejected
+  end.
+
 % @doc trying to transist from one state to another by checking if 
 %      the current node 
 %
-transist(   [],     _) -> reject;
+transist(   [],     _) -> illegal;
 transist([H|T], Token) -> 
   {_,RequiredToken,NextState} = H,
   case Token =:= RequiredToken of
