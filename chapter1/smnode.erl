@@ -1,10 +1,15 @@
 -module(smnode).
 -author("lethaljellybean at gmail.com"). 
--export([spawn_sm/0,smachine/3]).
+-export([go/2,smachine/3]).
 
--record(state_machina, {transition_table=[{}], accept_state=[], initial_state=q0}).
-
-% @doc a quick sample of a state machine to 
+% @doc This is a node that implements behaviour of a state machine
+%      in a perhaps naive method. 
+%
+%      A state machine requires vertices, edges, and conditions to travel
+%      on one edge to another. 
+%      {From, {{state, token}, nextstate}}
+%      
+%      a quick sample of a state machine to 
 %      use for all sorts of stuff.
 %
 %                     t0
@@ -14,22 +19,6 @@
 %       `---- t0 ---- q2 ---+ 
 %                     V t1
 %
-spawn_sm() ->
-  spawn(fun() -> smachine([
-    {q0, 1, q1},
-    {q1, 0, q1},
-    {q1, 1, q2}, 
-    {q2, 0, q0},
-    {q2, 1, q2}],
-    {q0},
-    q0) end).
-
-% @doc This is a node that implements behaviour of a state machine
-%      in a perhaps naive method. 
-%
-%      A state machine requires vertices, edges, and conditions to travel
-%      on one edge to another. 
-%      {From, {{state, token}, nextstate}}
 smachine(States, AcceptStates, CurrentState) ->
   receive
     {From, Transition} -> 
@@ -39,6 +28,8 @@ smachine(States, AcceptStates, CurrentState) ->
           From ! "Can't let you do that transistion, Starfox",
           smachine(States, AcceptStates, CurrentState);
         false ->
+          % Send back the current state
+          From ! TRet,
           smachine(States, AcceptStates, TRet)
       end;
     {From, terminate} -> 
@@ -46,6 +37,9 @@ smachine(States, AcceptStates, CurrentState) ->
     _ -> 
       smachine(States, AcceptStates, CurrentState)
   end.
+
+go(Pid,State) ->
+  Pid ! {self(), State}.
 
 % @doc trying to transist from one state to another by checking if 
 %      the current node 
